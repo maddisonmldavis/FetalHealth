@@ -1,0 +1,334 @@
+# google colab wrap output for easier viewing of notebook  
+
+from IPython.display import HTML, display
+
+def set_css():
+  display(HTML('''
+  <style>
+    pre {
+        white-space: pre-wrap;
+    }
+  </style>
+  '''))
+get_ipython().events.register('pre_run_cell', set_css)
+
+# import libraries  
+
+import numpy as np 
+import pandas as pd 
+import io
+
+# prosessing 
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
+
+# visualization 
+import seaborn as sns 
+import matplotlib.pyplot as plt
+
+# machine learning model
+
+from keras import Sequential
+from keras.layers import Dense, Dropout
+
+# create callbacks for model actions 
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+
+# accuracy testing for models and model performance  
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+
+
+
+# Data  
+
+[Data from Sisporto 2.0: A program for automated analysis of cardiotocograms]( https://onlinelibrary.wiley.com/doi/10.1002/1520-6661(200009/10)9:5%3C311::AID-MFM12%3E3.0.CO;2-9)
+
+CSV can be found [Here](https://docs.google.com/spreadsheets/d/1HK7iVwi2nkJcFVApFOq-MMP1RnSg288nKnUzrVELPec/edit?usp=sharing) 
+
+**In order to run and execute the notebook you must download the csv file above and name it 'fetal_health.csv' and upload it to the notebook on the left**
+to upload to notebook click the file image on left and then click the paper image with a upwards arrow on it then run all 
+
+df = pd.read_csv('fetal_health.csv')
+# check if data is uploaded 
+df.head()
+
+# Check info on csv
+
+df.info()
+
+# Visualization 
+
+#### Correlation between varibles 
+
+# correlation heat map creation 
+corr = df.corr()
+plt.figure(figsize=(15,15))
+# seaborn heatmap call 
+sns.heatmap(corr, annot=True)
+# print visual 
+plt.show()
+
+
+
+# search for strongest relations negative and positive definition 
+
+def search_strong_relation(value):
+  if value >= 0.7:
+    return value
+  elif value<=-0.7:
+    return value 
+  else:
+    return 0
+
+# Positive correlations 
+corr = df.corr()
+corr = (corr>=0.7).astype('int')
+
+plt.figure(figsize=(15,15))
+plt.title("Strongest Positive Relations")
+sns.heatmap(corr, annot=True)
+plt.show()
+
+# Negative correlations 
+
+corr = df.corr()
+corr = (corr<-0.7).astype('int')
+
+plt.figure(figsize=(15,15))
+plt.title("Strongest Negative Relations")
+sns.heatmap(corr, annot=True)
+plt.show()
+
+# histogram plotting for frequency 
+
+plt.figure(figsize=(9,7))
+sns.histplot(df['histogram_mode'], kde=True)
+plt.show()
+
+# Box and whister plot 
+
+sns.catplot(
+    data=df, y="histogram_mode", x="fetal_health", kind="box", aspect=1.5)
+plt.show()
+
+# the values appear to be concentrated between approx 130-150 
+# lets see that clearer and create a baseline value histogram to compare in another box and whisker plot
+plt.figure(figsize=(9,7))
+sns.histplot(df['baseline value'], kde=True)
+plt.show() 
+
+sns.catplot(data=df, y="baseline value", x="fetal_health", kind="box", aspect=1.5)
+plt.show()
+
+This range concetration falls betwenn Approx 120-145
+
+plt.figure(figsize=(9,7))
+sns.scatterplot(data=df, x="histogram_mode", y="baseline value", hue="fetal_health")
+plt.show()
+
+As you can see there is a positive linear relationship 
+
+fetal health classifcations 1(lightest purple) and 3(black) are easily seperated 
+whereas 2(purple) and 1(lightest purple) are mixed together 
+
+
+plt.figure(figsize=(10,8))
+sns.histplot(df['histogram_mean'], kde=True)
+plt.show()
+
+sns.catplot(data=df, y="histogram_mean", x="fetal_health", kind="box", aspect=1.5)
+plt.show()
+
+
+plt.figure(figsize=(10,8))
+sns.histplot(df['histogram_median'], kde=True)
+plt.show()
+
+sns.catplot(
+    data=df, y="histogram_median", x="fetal_health", kind="box", aspect=1.5
+)
+plt.show()
+
+# mean vs baseline 
+plt.figure(figsize=(9,7))
+sns.scatterplot(
+    data=df, x="histogram_mean", y="baseline value", hue="fetal_health"
+
+)
+plt.show()
+
+# median vs baseline 
+plt.figure(figsize=(9,7))
+sns.scatterplot(
+    data=df, x="histogram_median", y="baseline value", hue="fetal_health"
+
+)
+plt.show()
+
+Similar distubution as rest 
+
+plt.figure(figsize=(9,7))
+sns.histplot(df["histogram_width"], kde=True)
+plt.show()
+
+plt.figure(figsize=(9,7))
+sns.histplot(df["histogram_number_of_peaks"], kde=True)
+plt.show()
+
+Continously Decreases the number of peaks 
+
+plt.figure(figsize=(9,7))
+sns.scatterplot(
+    data=df, x='histogram_number_of_peaks', y='histogram_width', hue='fetal_health'
+)
+plt.show()
+
+The classes are still not seperable although a linear relationship is still visible 
+
+
+sns.catplot(
+    data=df, y="histogram_width", x="fetal_health", kind="box", aspect=1.5)
+plt.show()
+
+Overlap between the classifications is high
+not reliable varible for determining health 
+
+plt.figure(figsize=(9,7))
+sns.scatterplot(
+    data=df, x='histogram_mode', y='histogram_mean', hue='fetal_health'
+)
+plt.show()
+
+plt.figure(figsize=(9,7))
+sns.scatterplot( 
+    data=df, x='histogram_mode', y='histogram_mean', hue='fetal_health')
+plt.show()
+
+plt.figure(figsize=(9,7))
+sns.scatterplot( 
+    data=df, x='histogram_median', y='histogram_mean', hue='fetal_health')
+plt.show()
+
+This shows that the classes are seperable and can be used to create a model to find other hidden patterns, statically retlated. 
+
+# negative relations 
+
+plt.figure(figsize=(9,7))
+sns.histplot(df['histogram_min'], kde=True)
+plt.show()
+
+sns.catplot(data=df, y='histogram_min', x='fetal_health', kind='box', aspect=1.5
+)
+plt.show()
+
+plt.figure(figsize=(9,7))
+sns.scatterplot(
+   data=df, x='histogram_min', y='histogram_width', hue='fetal_health'
+)
+plt.show()
+
+There can be a negative reltationship seen, but the classifications are not easily seperable.
+
+## Data Splitting for model training and testing 
+
+# Adjust scale of features to create only one scale 
+
+y = df.pop('fetal_health') - 1 # 1-3 to 0-2
+x = df 
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(x) # numpy array 
+
+# Now split data into, training data, testing/validation data using Stratified Splitting 
+
+splitting = StratifiedShuffleSplit(n_splits=3)
+for train_ids, test_ids in splitting.split(X_scaled, y):
+  X_train_full, y_train_full = X_scaled[train_ids], y[train_ids]
+  X_test, y_test = X_scaled[test_ids], y[test_ids]
+
+X_train, X_valid, y_train, y_valid = train_test_split(X_train_full, y_train_full, test_size=0.2)
+
+#Dense Model Feature Selection
+
+
+from sklearn.ensemble import RandomForestClassifier
+
+randfc = RandomForestClassifier()
+randfc.fit(X_train, y_train)
+feature_imps = randfc.feature_importances_
+feature_names = df.columns
+
+plt.figure(figsize=(9,7))
+sns.barplot(
+    x=feature_names, y=feature_imps)
+plt.axhline(np.mean(feature_imps), color='k', linestyle="--", alpha=0.5, label="Mean Importance")
+plt.xticks(rotation=90)
+plt.legend()
+
+plt.show()
+
+All features that fall below the mean importance line can be dropped with no effect on model. But the dense model that we wil use will do this automatically.
+
+
+# Dense Model
+
+name = "dense"
+
+# model building
+model = Sequential([
+    Dense(32, activation='relu', kernel_initializer='he_normal'),
+    Dense(64, activation='relu', kernel_initializer='he_normal'),
+    Dense(128, activation='relu', kernel_initializer='he_normal'),
+    Dropout(0.2),
+    Dense(3, activation='softmax'),], name=name)
+# compile
+model.compile(
+    loss='sparse_categorical_crossentropy',
+    optimizer='adam',
+    metrics=['accuracy']
+    )
+
+# callbacks
+callback = [EarlyStopping(patience=3, restore_best_weights=True), ModelCheckpoint(name + ".h5", save_best_only=True)]
+
+
+model.fit(X_train, y_train, validation_data=(X_valid, y_valid), epochs=15, callbacks=callback)
+
+
+
+# Evaluation
+
+
+model.evaluate(X_test, y_test)
+
+Accuracy at 91% 
+
+# lets test the models performance 
+
+#Make predication 
+
+predict = np.argmax(model.predict(X_test), axis=1)
+
+# calculate 
+
+accu_score = accuracy_score(y_test, predict)
+pre_score = precision_score(y_test, predict, average='macro')
+re_score = recall_score(y_test, predict, average='macro')
+f_score = f1_score(y_test, predict, average='macro')
+
+# show 
+
+print("Accuracy Score : {:.6}".format(accu_score))
+print("Precision Score : {:.6}".format(pre_score))
+print("Recall Score : {:.6}".format(re_score))
+print("f1 Score : {:.6}".format(f_score))
+
+
+Accuracy Score : 0.906103 : 91%  <br>
+Precision Score : 0.846538 : 85%  <br>
+Recall Score : 0.817908 : 82%   <br>
+f1 Score : 0.831258 : 83%.  <br>
+
+print(classification_report(y_test, predict))
